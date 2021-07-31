@@ -1,6 +1,7 @@
 {
   "name": "poster-token",
-  "license": "UNLICENSED",
+  "license": "MIT",
+  "author": "Dennison Bertram",
   "scripts": {
     "codegen": "graph codegen",
     "build": "graph build",
