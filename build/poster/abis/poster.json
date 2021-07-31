@@ -1,7 +1,11 @@
 [
   {
     "inputs": [
-      { "internalType": "string", "name": "content", "type": "string" }
+      {
+        "internalType": "string",
+        "name": "content",
+        "type": "string"
+      }
     ],
     "name": "post",
     "outputs": [],

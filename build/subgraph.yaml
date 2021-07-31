@@ -1,6 +1,6 @@
 specVersion: 0.0.2
 schema:
-  file: ./schema.graphql
+  file: schema.graphql
 dataSources:
   - kind: ethereum/contract
     name: poster
@@ -17,8 +17,8 @@ dataSources:
         - MockEvent
       abis:
         - name: poster
-          file: ./abis/poster.json
+          file: poster/abis/poster.json
       callHandlers:
         - function: post(string)
           handler: handlePost
-      file: ./src/mapping.ts
+      file: poster/poster.wasm
