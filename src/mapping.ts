@@ -54,6 +54,11 @@ export function handlePost(call: PostCall): void {
             account.nonce = account.nonce.plus(BigInt.fromI32(1));
         }
 
+// Remember to reject if the nonce is not actually present
+        if (nonce == null){
+            log.warning("No nonce provided", []);
+            return;
+        }
 
         let operation = json_dict.get('operation');
 
