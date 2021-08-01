@@ -13,9 +13,9 @@ This proof of concept works by sending JSON messages to the Poster.sol contract 
 
 To create a token you send: 
 
-{"operation": "CREATE","supply": <<an integer amount of tokens>>,"name": "<<token name>>"}
+{"operation": "CREATE","supply": 1000,"name": "Test Token Name"}
 
 To transfer a token you send: 
-{"operaion": "TRANSFER", "token": "<<token name>>", "recipient": "<<Your address here>>", "amount": <<amount>>}
+{"operaion": "TRANSFER", "token": "Test Token Name", "recipient": "Ethereum address here", "amount": 50}
 
 People will probably send all sorts of stuff to test this and break the subgraph, but the concept works. :-) 
