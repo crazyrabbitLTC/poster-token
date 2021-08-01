@@ -16,6 +16,7 @@ To create a token you send:
 {"operation": "CREATE","supply": 1000,"name": "Test Token Name"}
 
 To transfer a token you send: 
+
 {"operaion": "TRANSFER", "token": "Test Token Name", "recipient": "Ethereum address here", "amount": 50}
 
 People will probably send all sorts of stuff to test this and break the subgraph, but the concept works. :-) 
