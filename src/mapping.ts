@@ -13,6 +13,7 @@ export function handlePost(call: PostCall): void {
         account.nonce = BigInt.fromI32(0);
     }
 
+    account.save()
 
     // Ideally here we call the contract to validate the user actually signed the message
 
@@ -37,28 +38,30 @@ export function handlePost(call: PostCall): void {
         //Check if the "operation" flag exists
         let isOperationFlag = json_dict.get('operation');
         if (isOperationFlag == null) {
+            log.warning("No Valid JSON Operation flag found.", []);
             return;
         }
         if (isOperationFlag.kind != JSONValueKind.STRING) {
+            log.warning("JSON operation object is not a valid string.", []);
             return;
         }
 
         // Check account nonce
-        let nonce = json_dict.get('nonce');
-        if (nonce != null && nonce.kind == JSONValueKind.NUMBER) {
-            if (nonce.toBigInt() != account.nonce.plus(BigInt.fromI32(1))) {
-                log.warning("Account nonce is incorrect {}", [nonce.toBigInt().toString()]);
-                return;
-            }
+        // let nonce = json_dict.get('nonce');
+        // if (nonce != null && nonce.kind == JSONValueKind.NUMBER) {
+        //     if (nonce.toBigInt() != account.nonce.plus(BigInt.fromI32(1))) {
+        //         log.warning("Account nonce is incorrect {}", [nonce.toBigInt().toString()]);
+        //         return;
+        //     }
 
-            account.nonce = account.nonce.plus(BigInt.fromI32(1));
-        }
+        //     account.nonce = account.nonce.plus(BigInt.fromI32(1));
+        // }
 
-// Remember to reject if the nonce is not actually present
-        if (nonce == null){
-            log.warning("No nonce provided", []);
-            return;
-        }
+        // Remember to reject if the nonce is not actually present
+        // if (nonce == null) {
+        //     log.warning("No nonce provided", []);
+        //     return;
+        // }
 
         let operation = json_dict.get('operation');
 
@@ -82,16 +85,18 @@ export function handlePost(call: PostCall): void {
                     if (tokenSupply != null && tokenSupply.kind == JSONValueKind.NUMBER) {
                         token.totalSupply = tokenSupply.toBigInt();
 
-                        // give all tokens to account
-                        let newBalance = new Balance(tokenName.toString().concat(account.id));
-                        newBalance.account = account.id;
-                        newBalance.token = token.id;
-                        newBalance.amount = token.totalSupply;
-                        newBalance.save();
-
                     }
+
+                    // give all tokens to account
+                    let newBalance = new Balance(tokenName.toString().concat(account.id));
+                    newBalance.account = account.id;
+                    newBalance.token = token.id;
+                    newBalance.amount = tokenSupply.toBigInt();
+
+                    newBalance.save();
                     token.save();
                 }
+                account.save();
                 return;
             }
 
@@ -115,46 +120,70 @@ export function handlePost(call: PostCall): void {
 
                 }
 
-                validatedRecipient.save();
-
-                if (amount != null && amount.kind == JSONValueKind.NUMBER) {
-                    validatedAmount = amount.toBigInt();
-
+                if (amount == null) {
+                    log.warning("Amount not present.", []);
+                    return
                 }
 
-                if (targetToken != null && targetToken.kind == JSONValueKind.STRING) {
-                    validatedToken = Token.load(targetToken.toString() as string) as Token;
-                    if (validatedToken == null) {
-                        log.warning("No such token exists. {}", [targetToken.toString()]);
-                        return;
-                    }
+                if (amount.kind != JSONValueKind.NUMBER) {
+                    log.warning("Amount is not an integer", []);
+                    return
                 }
+
+                validatedAmount = amount.toBigInt();
+
+                log.debug("Validated amount: {}", [validatedAmount.toString()]);
+
+                if (targetToken == null) {
+                    log.warning("Target token not given.", []);
+                    return
+                }
+
+                if (targetToken.kind != JSONValueKind.STRING) {
+                    log.warning("Target token value invalid.", []);
+                    return
+                }
+
+                validatedToken = Token.load(targetToken.toString() as string) as Token;
+
+                if (validatedToken == null) {
+                    log.warning("No such token exists. {}", [targetToken.toString()]);
+                    return;
+                }
+
 
                 // Calculate new balances
 
                 // Get sender balance
-                let senderBalance = Balance.load(targetToken.toString().concat(account.id));
+                let senderBalance = Balance.load(validatedToken.id.concat(account.id));
+
                 if (senderBalance == null) {
-                    log.warning("Account has no token balance.", []);
+                    log.debug("Sender has no token balance.", []);
                     return
                 }
 
-                // subtract from sender
+                if (senderBalance.amount.lt(validatedAmount)){
+                    log.debug("Sender balance does not have enough to send. Sender Balance: {}. Amount: {}", [senderBalance.amount.toString(), validatedAmount.toString()]);
+                    return
+                }
+
                 senderBalance.amount = senderBalance.amount.minus(validatedAmount);
 
                 // add to recipient
-                let recipientBalance = Balance.load(targetToken.toString().concat(validatedRecipient.id));
+                let recipientBalance = Balance.load(validatedToken.id.concat(validatedRecipient.id));
+
                 if (recipientBalance == null) {
-                    recipientBalance = new Balance(targetToken.toString().concat(validatedRecipient.id));
+                    recipientBalance = new Balance(validatedToken.id.concat(validatedRecipient.id));
                     recipientBalance.account = validatedRecipient.id;
                     recipientBalance.token = validatedToken.id;
+                    recipientBalance.amount = BigInt.fromI32(0);
                 }
+
                 recipientBalance.amount = recipientBalance.amount.plus(validatedAmount);
 
+                validatedRecipient.save();
                 senderBalance.save();
                 recipientBalance.save();
-
-
 
             }
         }
